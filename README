@@ -1,0 +1,7 @@
+lua_minitest
+============
+
+busted was too complicated and didn't do what I wanted so I made this
+
+See test_minitest.lua for example usage. 
+p. much like busted except it doesn't require a special bash script to run the tests.
