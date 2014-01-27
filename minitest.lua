@@ -1,4 +1,5 @@
 local ansicolors = require('ansicolors')
+local betterError = require('betterError')
 
 local startingTest = ansicolors('%{blue}○')
 local success = ansicolors('%{green}●')
@@ -19,6 +20,7 @@ local function makeContext(root)
             end,
             it = function (self,name,test)
                 io.write(startingTest)
+                setfenv(test,_G)
                 status, err = pcall(test)
                 io.write(backspace)
                 maybefuture = err
@@ -46,13 +48,20 @@ end
 local function betterError(andThen,...) 
     olderror = error
     local function newerror (message)
+        print('got',debug.traceback())
         return olderror({message=message,info=debug.getinfo(3),traceback=debug.traceback()})
-    end    
+    end  
     _G.error = newerror
+    env = getfenv(andThen)
+    env.error = newerror
+    setfenv(andThen,env)
+    print('a')
     result = {pcall(andThen, ...)}
+    print('b')
     error = olderror
     status,err = unpack(result)
     if status == false then
+        print('HI',err)
         while(type(err) ~= "string") do
             print(err.traceback)
             print(err.info.source..":"..err.info.currentline)
@@ -61,6 +70,7 @@ local function betterError(andThen,...)
         end
         error(err)
     end
+    print('hi',status)
     table.remove(result,1)
     return unpack(result)
 end
@@ -96,11 +106,15 @@ local function withTests(makeTests)
         else
             io.write('/')
         end
-        io.write(err.name..' failed!')
+        io.write(err.name..' failed!\n')
         err = err.err
-        print(err.message)
-        print(err.info.source..":"..err.info.currentline)
-        --print(err.err.traceback)
+        if(type(err)=="string") then
+            print('this should not be a string! but ',err)
+        else
+            print(err.message)
+            print(err.info.source..":"..err.info.currentline)
+            --print(err.err.traceback)
+        end
     end
     if not status then error(bigerr) end
     
